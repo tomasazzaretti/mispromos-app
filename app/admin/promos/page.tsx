@@ -66,6 +66,7 @@ type Promo = {
   vigencia_desde: string;
   vigencia_hasta: string | null;
   fuente_url: string | null;
+  fiabilidad_pct: number;
   activo: boolean;
   origen: string;
   entidad_id: string | null;
@@ -85,6 +86,7 @@ const FORM_VACIO = {
   vigencia_desde: "",
   vigencia_hasta: "",
   fuente_url: "",
+  fiabilidad_pct: "100",
   activo: true,
 };
 
@@ -152,6 +154,7 @@ export default function AdminPromosPage() {
       vigencia_desde: p.vigencia_desde?.slice(0, 10) ?? "",
       vigencia_hasta: p.vigencia_hasta?.slice(0, 10) ?? "",
       fuente_url: p.fuente_url ?? "",
+      fiabilidad_pct: String(p.fiabilidad_pct),
       activo: p.activo,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -173,6 +176,7 @@ export default function AdminPromosPage() {
       vigencia_desde: form.vigencia_desde || undefined,
       vigencia_hasta: form.vigencia_hasta || null,
       fuente_url: form.fuente_url || null,
+      fiabilidad_pct: form.fiabilidad_pct === "" ? 100 : Number(form.fiabilidad_pct),
       activo: form.activo,
     };
 
@@ -336,10 +340,17 @@ export default function AdminPromosPage() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <label className="adm-label">Fuente (URL)</label>
-            <input className="adm-input" type="url" placeholder="https://www.bna.com.ar/beneficios"
-              value={form.fuente_url} onChange={(e) => setForm({ ...form, fuente_url: e.target.value })} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+            <div>
+              <label className="adm-label">Fuente (URL)</label>
+              <input className="adm-input" type="url" placeholder="https://www.bna.com.ar/beneficios"
+                value={form.fuente_url} onChange={(e) => setForm({ ...form, fuente_url: e.target.value })} />
+            </div>
+            <div>
+              <label className="adm-label">Fiabilidad de datos (%)</label>
+              <input className="adm-input" type="number" min="0" max="100" step="5"
+                value={form.fiabilidad_pct} onChange={(e) => setForm({ ...form, fiabilidad_pct: e.target.value })} />
+            </div>
           </div>
 
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, marginBottom: 20, cursor: "pointer" }}>
@@ -382,6 +393,7 @@ export default function AdminPromosPage() {
                   <th>%</th>
                   <th>Días</th>
                   <th>Vigencia</th>
+                  <th>Fiabilidad</th>
                   <th>Estado</th>
                   <th></th>
                 </tr>
@@ -396,6 +408,12 @@ export default function AdminPromosPage() {
                     <td>{p.dias_semana.map((d) => DIAS[d]).join(", ")}</td>
                     <td style={{ fontSize: 12, color: "var(--ink-soft)" }}>
                       {p.vigencia_desde?.slice(0, 10)}{p.vigencia_hasta ? ` → ${p.vigencia_hasta.slice(0, 10)}` : ""}
+                    </td>
+                    <td>
+                      <span className={`adm-chip ${p.fiabilidad_pct >= 80 ? "on" : p.fiabilidad_pct >= 50 ? "" : "off"}`}
+                        style={p.fiabilidad_pct >= 80 || p.fiabilidad_pct < 50 ? {} : { background: "rgba(217,164,65,.18)", color: "var(--amber-deep)" }}>
+                        {p.fiabilidad_pct}%
+                      </span>
                     </td>
                     <td>
                       <span className={`adm-chip ${p.activo ? "on" : "off"}`} style={{ cursor: "pointer" }}

@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("promos")
       .select(
-        `id, comercio, descuento_pct, tope_reintegro, dias_semana, medio_pago,
+        `id, comercio, descuento_pct, tope_reintegro, dias_semana, medio_pago, fiabilidad_pct,
          entidades ( nombre ), rubros ( slug )`
       )
       .eq("activo", true)
@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       tope_reintegro: p.tope_reintegro,
       dias_semana: p.dias_semana,
       medio_pago: p.medio_pago,
+      fiabilidad_pct: p.fiabilidad_pct,
       entidad: p.entidades?.nombre,
       rubro: p.rubros?.slug,
     }));

@@ -354,6 +354,14 @@ function PromoCard({ promo, isToday, saved, activeEntidad, rubrosCatalogo, onSav
         <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <span>{promo.tope_reintegro ? `Tope $${Number(promo.tope_reintegro).toLocaleString("es-AR")}/mes` : "Sin tope conocido"}</span>
           <span>{(promo.dias_semana ?? []).map((d) => DIAS[d].slice(0, 3)).join(", ")}</span>
+          {promo.fiabilidad_pct != null && (
+            <span style={{
+              color: promo.fiabilidad_pct >= 80 ? "var(--sage)" : promo.fiabilidad_pct >= 50 ? "var(--amber-deep)" : "var(--rust)",
+              fontWeight: 600,
+            }}>
+              Fiabilidad de datos {promo.fiabilidad_pct}%
+            </span>
+          )}
         </div>
       </div>
 

@@ -13,7 +13,7 @@ export async function GET() {
     .from("promos")
     .select(
       `id, comercio, descuento_pct, tope_reintegro, dias_semana, medio_pago,
-       vigencia_desde, vigencia_hasta, fuente_url, activo, origen, created_at,
+       vigencia_desde, vigencia_hasta, fuente_url, fiabilidad_pct, activo, origen, created_at,
        entidad_id, rubro_id,
        entidades ( nombre ),
        rubros ( nombre, slug )`
@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       vigencia_desde: body.vigencia_desde || undefined,
       vigencia_hasta: body.vigencia_hasta || null,
       fuente_url: body.fuente_url || null,
+      fiabilidad_pct: body.fiabilidad_pct ?? 100,
       activo: body.activo ?? true,
       origen: "manual",
     })

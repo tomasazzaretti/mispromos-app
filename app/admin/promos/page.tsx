@@ -68,7 +68,7 @@ type Promo = {
   fuente_url: string | null;
   activo: boolean;
   origen: string;
-  entidad_id: string;
+  entidad_id: string | null;
   rubro_id: string;
   entidades: { nombre: string } | null;
   rubros: { nombre: string; slug: string } | null;
@@ -142,7 +142,7 @@ export default function AdminPromosPage() {
   const handleEdit = (p: Promo) => {
     setEditingId(p.id);
     setForm({
-      entidad_id: p.entidad_id,
+      entidad_id: p.entidad_id ?? "",
       rubro_id: p.rubro_id,
       comercio: p.comercio,
       descuento_pct: String(p.descuento_pct),
@@ -163,7 +163,7 @@ export default function AdminPromosPage() {
     setError("");
 
     const payload = {
-      entidad_id: form.entidad_id,
+      entidad_id: form.entidad_id || null,
       rubro_id: form.rubro_id,
       comercio: form.comercio,
       descuento_pct: Number(form.descuento_pct),
@@ -269,8 +269,8 @@ export default function AdminPromosPage() {
             <div>
               <label className="adm-label">Entidad</label>
               <select className="adm-select" value={form.entidad_id}
-                onChange={(e) => setForm({ ...form, entidad_id: e.target.value })} required>
-                <option value="">Elegir...</option>
+                onChange={(e) => setForm({ ...form, entidad_id: e.target.value })}>
+                <option value="">Ninguna (promo directa de la tienda)</option>
                 {entidades.map((e) => (
                   <option key={e.id} value={e.id}>{e.nombre} ({e.tipo})</option>
                 ))}
@@ -389,7 +389,7 @@ export default function AdminPromosPage() {
               <tbody>
                 {promosFiltradas.map((p) => (
                   <tr key={p.id}>
-                    <td>{p.entidades?.nombre}</td>
+                    <td>{p.entidades?.nombre ?? <span style={{ color: "var(--ink-soft)" }}>— (sin banco)</span>}</td>
                     <td>{p.rubros?.nombre}</td>
                     <td>{p.comercio}</td>
                     <td>{p.descuento_pct}%</td>

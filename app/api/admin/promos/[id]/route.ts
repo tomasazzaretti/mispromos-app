@@ -17,7 +17,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const update: Record<string, unknown> = {};
   for (const campo of CAMPOS_EDITABLES) {
-    if (campo in body) update[campo] = body[campo];
+    if (campo in body) update[campo] = body[campo] === "" ? null : body[campo];
   }
 
   if (Object.keys(update).length === 0) {

@@ -349,7 +349,7 @@ function PromoCard({ promo, isToday, saved, activeEntidad, rubrosCatalogo, onSav
           <span style={{ fontSize: 14, fontWeight: 500 }}>{promo.comercio}</span>
         </div>
         <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>
-          {promo.entidad} · {promo.medio_pago} · {label}
+          {[promo.entidad ?? "Promo directa", promo.medio_pago, label].filter(Boolean).join(" · ")}
         </div>
         <div style={{ fontSize: 12.5, color: "var(--ink-soft)", marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <span>{promo.tope_reintegro ? `Tope $${Number(promo.tope_reintegro).toLocaleString("es-AR")}/mes` : "Sin tope conocido"}</span>
@@ -545,7 +545,7 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
             promo={p}
             isToday={tab === "hoy" || hoyVisible.some((h) => h.id === p.id)}
             saved={guardadas.has(p.id)}
-            activeEntidad={misEntidades.has(p.entidad)}
+            activeEntidad={p.entidad ? misEntidades.has(p.entidad) : true}
             rubrosCatalogo={catalogos.rubros}
             onSave={handleSave}
             onDismiss={handleDismiss}
@@ -562,7 +562,7 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {savedList.map((p) => (
               <PromoCard key={p.id} promo={p} isToday={hoyVisible.some((h) => h.id === p.id)} saved
-                activeEntidad={misEntidades.has(p.entidad)} rubrosCatalogo={catalogos.rubros}
+                activeEntidad={p.entidad ? misEntidades.has(p.entidad) : true} rubrosCatalogo={catalogos.rubros}
                 onSave={handleSave} onDismiss={handleDismiss} />
             ))}
           </div>

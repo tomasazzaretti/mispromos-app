@@ -27,7 +27,9 @@ export async function GET() {
   return NextResponse.json({ promos: data });
 }
 
-const CAMPOS_REQUERIDOS = ["entidad_id", "rubro_id", "comercio", "descuento_pct", "dias_semana"];
+// entidad_id no es obligatorio: una promo sin banco/billetera asociado
+// ("promo directa de la tienda") le llega a cualquiera que tenga el rubro.
+const CAMPOS_REQUERIDOS = ["rubro_id", "comercio", "descuento_pct", "dias_semana"];
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from("promos")
     .insert({
-      entidad_id: body.entidad_id,
+      entidad_id: body.entidad_id || null,
       rubro_id: body.rubro_id,
       comercio: body.comercio,
       descuento_pct: body.descuento_pct,

@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const CAMPOS_EDITABLES = [
-  "entidad_id", "rubro_id", "comercio", "descuento_pct", "tope_reintegro",
+  "entidad_id", "rubro_id", "comercio", "descuento_pct", "cuotas_sin_interes", "tope_reintegro",
   "dias_semana", "medio_pago", "vigencia_desde", "vigencia_hasta",
   "fuente_url", "fiabilidad_pct", "activo",
 ];

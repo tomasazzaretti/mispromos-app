@@ -59,7 +59,8 @@ type Rubro = { id: string; slug: string; nombre: string };
 type Promo = {
   id: string;
   comercio: string;
-  descuento_pct: number;
+  descuento_pct: number | null;
+  cuotas_sin_interes: number | null;
   tope_reintegro: number | null;
   dias_semana: number[];
   medio_pago: string | null;
@@ -80,6 +81,7 @@ const FORM_VACIO = {
   rubro_id: "",
   comercio: "",
   descuento_pct: "",
+  cuotas_sin_interes: "",
   tope_reintegro: "",
   dias_semana: [] as number[],
   medio_pago: "",
@@ -147,7 +149,8 @@ export default function AdminPromosPage() {
       entidad_id: p.entidad_id ?? "",
       rubro_id: p.rubro_id,
       comercio: p.comercio,
-      descuento_pct: String(p.descuento_pct),
+      descuento_pct: p.descuento_pct != null ? String(p.descuento_pct) : "",
+      cuotas_sin_interes: p.cuotas_sin_interes != null ? String(p.cuotas_sin_interes) : "",
       tope_reintegro: p.tope_reintegro != null ? String(p.tope_reintegro) : "",
       dias_semana: p.dias_semana,
       medio_pago: p.medio_pago ?? "",
@@ -162,6 +165,12 @@ export default function AdminPromosPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (!form.descuento_pct && !form.cuotas_sin_interes) {
+      setError("Cargá al menos un % de descuento o una cantidad de cuotas sin interés");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -169,7 +178,8 @@ export default function AdminPromosPage() {
       entidad_id: form.entidad_id || null,
       rubro_id: form.rubro_id,
       comercio: form.comercio,
-      descuento_pct: Number(form.descuento_pct),
+      descuento_pct: form.descuento_pct ? Number(form.descuento_pct) : null,
+      cuotas_sin_interes: form.cuotas_sin_interes ? Number(form.cuotas_sin_interes) : null,
       tope_reintegro: form.tope_reintegro ? Number(form.tope_reintegro) : null,
       dias_semana: form.dias_semana,
       medio_pago: form.medio_pago || null,
@@ -298,11 +308,19 @@ export default function AdminPromosPage() {
               value={form.comercio} onChange={(e) => setForm({ ...form, comercio: e.target.value })} required />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>
+            Cargá al menos uno de los dos: % de descuento y/o cuotas sin interés (pueden ir juntos).
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
             <div>
               <label className="adm-label">Descuento %</label>
-              <input className="adm-input" type="number" min="1" max="100" step="1"
-                value={form.descuento_pct} onChange={(e) => setForm({ ...form, descuento_pct: e.target.value })} required />
+              <input className="adm-input" type="number" min="1" max="100" step="1" placeholder="sin descuento"
+                value={form.descuento_pct} onChange={(e) => setForm({ ...form, descuento_pct: e.target.value })} />
+            </div>
+            <div>
+              <label className="adm-label">Cuotas sin interés</label>
+              <input className="adm-input" type="number" min="1" step="1" placeholder="sin cuotas"
+                value={form.cuotas_sin_interes} onChange={(e) => setForm({ ...form, cuotas_sin_interes: e.target.value })} />
             </div>
             <div>
               <label className="adm-label">Tope reintegro ($)</label>
@@ -359,7 +377,8 @@ export default function AdminPromosPage() {
           </label>
 
           <div style={{ display: "flex", gap: 10 }}>
-            <button type="submit" className="adm-btn adm-btn-primary" disabled={saving || form.dias_semana.length === 0}>
+            <button type="submit" className="adm-btn adm-btn-primary"
+              disabled={saving || form.dias_semana.length === 0 || (!form.descuento_pct && !form.cuotas_sin_interes)}>
               {saving ? "Guardando..." : editingId ? "Guardar cambios" : "Cargar promo"}
             </button>
             {editingId && (
@@ -391,6 +410,7 @@ export default function AdminPromosPage() {
                   <th>Rubro</th>
                   <th>Comercio</th>
                   <th>%</th>
+                  <th>Cuotas</th>
                   <th>Días</th>
                   <th>Vigencia</th>
                   <th>Fiabilidad</th>
@@ -404,7 +424,8 @@ export default function AdminPromosPage() {
                     <td>{p.entidades?.nombre ?? <span style={{ color: "var(--ink-soft)" }}>— (sin banco)</span>}</td>
                     <td>{p.rubros?.nombre}</td>
                     <td>{p.comercio}</td>
-                    <td>{p.descuento_pct}%</td>
+                    <td>{p.descuento_pct != null ? `${p.descuento_pct}%` : "—"}</td>
+                    <td>{p.cuotas_sin_interes != null ? `${p.cuotas_sin_interes}x` : "—"}</td>
                     <td>{p.dias_semana.map((d) => DIAS[d]).join(", ")}</td>
                     <td style={{ fontSize: 12, color: "var(--ink-soft)" }}>
                       {p.vigencia_desde?.slice(0, 10)}{p.vigencia_hasta ? ` → ${p.vigencia_hasta.slice(0, 10)}` : ""}

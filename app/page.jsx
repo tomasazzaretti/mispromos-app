@@ -343,9 +343,16 @@ function PromoCard({ promo, isToday, saved, activeEntidad, rubrosCatalogo, onSav
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-          <span className="mp-display" style={{ fontSize: 20, fontWeight: 600, color: "var(--amber-deep)" }}>
-            {promo.descuento_pct}%
-          </span>
+          {promo.descuento_pct != null && (
+            <span className="mp-display" style={{ fontSize: 20, fontWeight: 600, color: "var(--amber-deep)" }}>
+              {promo.descuento_pct}%
+            </span>
+          )}
+          {promo.cuotas_sin_interes != null && (
+            <span className="mp-display" style={{ fontSize: promo.descuento_pct != null ? 14 : 20, fontWeight: 600, color: "var(--sage)" }}>
+              {promo.cuotas_sin_interes} cuotas sin interés
+            </span>
+          )}
           <span style={{ fontSize: 14, fontWeight: 500 }}>{promo.comercio}</span>
         </div>
         <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>
@@ -478,7 +485,10 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
   const todasVisible = useMemo(() => listaSinDescartadas(promosTodas), [promosTodas, descartadas]);
 
   const list = tab === "hoy" ? hoyVisible : tab === "semana" ? semanaVisible : todasVisible;
-  const bestToday = [...hoyVisible].sort((a, b) => b.descuento_pct - a.descuento_pct)[0];
+  const hoyConDescuento = hoyVisible.filter((p) => p.descuento_pct != null);
+  const bestToday = hoyConDescuento.length > 0
+    ? [...hoyConDescuento].sort((a, b) => b.descuento_pct - a.descuento_pct)[0]
+    : null;
   const savedList = todasVisible.filter((p) => guardadas.has(p.id));
 
   return (

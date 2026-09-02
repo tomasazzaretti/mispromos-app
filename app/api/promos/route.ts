@@ -29,11 +29,11 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("promos")
       .select(
-        `id, comercio, descuento_pct, tope_reintegro, dias_semana, medio_pago, fiabilidad_pct,
+        `id, comercio, descuento_pct, cuotas_sin_interes, tope_reintegro, dias_semana, medio_pago, fiabilidad_pct,
          entidades ( nombre ), rubros ( slug )`
       )
       .eq("activo", true)
-      .order("descuento_pct", { ascending: false });
+      .order("descuento_pct", { ascending: false, nullsFirst: false });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -41,6 +41,7 @@ export async function GET(request: Request) {
       id: p.id,
       comercio: p.comercio,
       descuento_pct: p.descuento_pct,
+      cuotas_sin_interes: p.cuotas_sin_interes,
       tope_reintegro: p.tope_reintegro,
       dias_semana: p.dias_semana,
       medio_pago: p.medio_pago,

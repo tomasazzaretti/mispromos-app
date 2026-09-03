@@ -124,12 +124,14 @@ const Styles = () => (
 );
 
 // ---------------------------------------------------------------------------
-// Login (código de 6 dígitos por email — sin contraseña)
+// Login (código por email — sin contraseña)
 //
-// Antes mandaba un magic link, pero el código no depende del navegador/
-// dispositivo que lo pidió (a diferencia del link, que se rompe si se pide
-// en un dispositivo y se abre en otro). El link de /auth/callback se deja
-// como fallback si el template de mail todavía lo incluye.
+// El largo del código lo define la config de Auth > Email en el dashboard
+// de Supabase (no siempre son 6 dígitos), así que el input no asume una
+// longitud fija. Antes mandaba un magic link, pero el código no depende del
+// navegador/dispositivo que lo pidió (a diferencia del link, que se rompe
+// si se pide en un dispositivo y se abre en otro). El link de /auth/callback
+// se deja como fallback si el template de mail todavía lo incluye.
 // ---------------------------------------------------------------------------
 function Login() {
   const [email, setEmail] = useState("");
@@ -184,20 +186,20 @@ function Login() {
           Ingresá el código
         </div>
         <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 24 }}>
-          Te mandamos un código de 6 dígitos a <strong>{email}</strong>.
+          Te mandamos un código a <strong>{email}</strong>.
         </div>
         <form onSubmit={handleVerifyCode}>
           <input
-            type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} required autoFocus
-            placeholder="123456" value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            type="text" inputMode="numeric" pattern="[0-9]*" maxLength={10} required autoFocus
+            placeholder="Código" value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 10))}
             className="mp-input"
             style={{ marginBottom: 12, letterSpacing: 6, textAlign: "center", fontSize: 20 }}
           />
           {error && <div style={{ fontSize: 12.5, color: "var(--rust)", marginBottom: 12 }}>{error}</div>}
           <button
             type="submit" className="mp-btn mp-btn-primary"
-            disabled={loading || code.length !== 6}
+            disabled={loading || code.length < 6}
             style={{ width: "100%", marginBottom: 10 }}
           >
             {loading ? "Verificando..." : "Entrar"}

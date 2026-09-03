@@ -152,7 +152,11 @@ function Login() {
 
     setLoading(false);
     if (error) {
-      setError("No pudimos enviar el código. Probá de nuevo.");
+      setError(
+        error.code === "over_email_send_rate_limit"
+          ? "Ya te mandamos un código hace muy poco. Esperá un minuto y volvé a pedirlo."
+          : "No pudimos enviar el código. Probá de nuevo."
+      );
       return;
     }
     setStep("code");

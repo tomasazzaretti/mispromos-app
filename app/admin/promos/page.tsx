@@ -103,6 +103,7 @@ export default function AdminPromosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(FORM_VACIO);
   const [filtro, setFiltro] = useState<"todas" | "activas" | "inactivas">("todas");
+  const [rubroFiltro, setRubroFiltro] = useState("todos");
 
   const cargarTodo = async () => {
     setLoading(true);
@@ -246,10 +247,12 @@ export default function AdminPromosPage() {
   };
 
   const promosFiltradas = useMemo(() => {
-    if (filtro === "activas") return promos.filter((p) => p.activo);
-    if (filtro === "inactivas") return promos.filter((p) => !p.activo);
-    return promos;
-  }, [promos, filtro]);
+    let resultado = promos;
+    if (filtro === "activas") resultado = resultado.filter((p) => p.activo);
+    if (filtro === "inactivas") resultado = resultado.filter((p) => !p.activo);
+    if (rubroFiltro !== "todos") resultado = resultado.filter((p) => p.rubro_id === rubroFiltro);
+    return resultado;
+  }, [promos, filtro, rubroFiltro]);
 
   return (
     <div className="adm-root">
@@ -387,12 +390,25 @@ export default function AdminPromosPage() {
           </div>
         </form>
 
-        {/* filtro + tabla */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        {/* filtros + tabla */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
           {(["todas", "activas", "inactivas"] as const).map((f) => (
             <button key={f} onClick={() => setFiltro(f)}
               className={`adm-btn ${filtro === f ? "adm-btn-primary" : "adm-btn-ghost"}`} style={{ padding: "8px 14px" }}>
               {f === "todas" ? "Todas" : f === "activas" ? "Activas" : "Inactivas"}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+          <button onClick={() => setRubroFiltro("todos")}
+            className={`adm-btn ${rubroFiltro === "todos" ? "adm-btn-primary" : "adm-btn-ghost"}`} style={{ padding: "8px 14px" }}>
+            Todos los rubros
+          </button>
+          {rubros.map((r) => (
+            <button key={r.id} onClick={() => setRubroFiltro(r.id)}
+              className={`adm-btn ${rubroFiltro === r.id ? "adm-btn-primary" : "adm-btn-ghost"}`} style={{ padding: "8px 14px" }}>
+              {r.nombre}
             </button>
           ))}
         </div>

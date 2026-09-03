@@ -399,6 +399,7 @@ function PromoCard({ promo, isToday, saved, activeEntidad, rubrosCatalogo, onSav
 // ---------------------------------------------------------------------------
 function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
   const [tab, setTab] = useState("hoy");
+  const [rubroFiltro, setRubroFiltro] = useState("todos");
   const [simDay, setSimDay] = useState(new Date().getDay());
   const [promosHoy, setPromosHoy] = useState([]);
   const [promosSemana, setPromosSemana] = useState([]);
@@ -484,8 +485,10 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
   const semanaVisible = useMemo(() => listaSinDescartadas(promosSemana), [promosSemana, descartadas]);
   const todasVisible = useMemo(() => listaSinDescartadas(promosTodas), [promosTodas, descartadas]);
 
-  const list = tab === "hoy" ? hoyVisible : tab === "semana" ? semanaVisible : todasVisible;
-  const hoyConDescuento = hoyVisible.filter((p) => p.descuento_pct != null);
+  const porRubro = (arr) => rubroFiltro === "todos" ? arr : arr.filter((p) => p.rubro === rubroFiltro);
+
+  const list = porRubro(tab === "hoy" ? hoyVisible : tab === "semana" ? semanaVisible : todasVisible);
+  const hoyConDescuento = porRubro(hoyVisible).filter((p) => p.descuento_pct != null);
   const bestToday = hoyConDescuento.length > 0
     ? [...hoyConDescuento].sort((a, b) => b.descuento_pct - a.descuento_pct)[0]
     : null;
@@ -542,7 +545,7 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
       )}
 
       {/* tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {[["hoy", "Hoy"], ["semana", "Tus rubros"], ["todas", "Todas"]].map(([key, label]) => (
           <div key={key} className={`mp-chip ${tab === key ? "active" : ""}`} onClick={() => setTab(key)}>
             {label}
@@ -550,11 +553,26 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
         ))}
       </div>
 
+      {/* filtro por rubro */}
+      <div className="mp-scroll" style={{ display: "flex", gap: 8, marginBottom: 18, overflowX: "auto", paddingBottom: 2 }}>
+        <div className={`mp-chip ${rubroFiltro === "todos" ? "active" : ""}`} style={{ flexShrink: 0 }} onClick={() => setRubroFiltro("todos")}>
+          Todos los rubros
+        </div>
+        {catalogos.rubros.map((r) => {
+          const Icon = RUBRO_ICONS[r.slug] ?? ShoppingCart;
+          return (
+            <div key={r.slug} className={`mp-chip ${rubroFiltro === r.slug ? "active" : ""}`} style={{ flexShrink: 0 }} onClick={() => setRubroFiltro(r.slug)}>
+              <Icon size={13} />{r.nombre}
+            </div>
+          );
+        })}
+      </div>
+
       {/* lista */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {!loading && list.length === 0 && (
           <div className="mp-card" style={{ padding: 24, textAlign: "center", color: "var(--ink-soft)", fontSize: 14 }}>
-            No hay nada para mostrar acá todavía. Probá otra pestaña o ajustá tus rubros en configuración.
+            No hay nada para mostrar acá todavía. Probá otra pestaña, otro rubro, o ajustá tus rubros en configuración.
           </div>
         )}
         {list.map((p) => (

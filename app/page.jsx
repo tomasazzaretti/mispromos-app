@@ -503,6 +503,10 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
     () => new Set(catalogos.entidades.filter((e) => perfil.entidad_ids.includes(e.id)).map((e) => e.nombre)),
     [catalogos, perfil]
   );
+  const misRubros = useMemo(
+    () => new Set(catalogos.rubros.filter((r) => perfil.rubro_ids.includes(r.id)).map((r) => r.slug)),
+    [catalogos, perfil]
+  );
 
   const handleSave = async (id) => {
     const estabaGuardada = guardadas.has(id);
@@ -545,10 +549,20 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
   const semanaVisible = useMemo(() => listaSinDescartadas(promosSemana), [promosSemana, descartadas]);
   const todasVisible = useMemo(() => listaSinDescartadas(promosTodas), [promosTodas, descartadas]);
 
-  const porRubro = (arr) => rubroFiltro === "todos" ? arr : arr.filter((p) => p.rubro === rubroFiltro);
+  // Si elegiste un rubro puntual, se muestra igual aunque no sea de "tus
+  // rubros" — la preferencia de rubro solo decide el default (sin filtro
+  // puntual) de Hoy/Tus rubros; en Todas nunca restringe, ni con "todos".
+  const porRubro = (arr, usarInteres) => {
+    if (rubroFiltro !== "todos") return arr.filter((p) => p.rubro === rubroFiltro);
+    return usarInteres ? arr.filter((p) => misRubros.has(p.rubro)) : arr;
+  };
 
-  const list = porRubro(tab === "hoy" ? hoyVisible : tab === "semana" ? semanaVisible : todasVisible);
-  const hoyConDescuento = porRubro(hoyVisible).filter((p) => p.descuento_pct != null);
+  const list = porRubro(
+    tab === "hoy" ? hoyVisible : tab === "semana" ? semanaVisible : todasVisible,
+    tab !== "todas"
+  );
+  const hoyInteres = useMemo(() => hoyVisible.filter((p) => misRubros.has(p.rubro)), [hoyVisible, misRubros]);
+  const hoyConDescuento = porRubro(hoyVisible, true).filter((p) => p.descuento_pct != null);
   const bestToday = hoyConDescuento.length > 0
     ? [...hoyConDescuento].sort((a, b) => b.descuento_pct - a.descuento_pct)[0]
     : null;
@@ -564,7 +578,7 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
             Hoy es {DIAS[simDay]}
           </div>
           <div style={{ fontSize: 13.5, color: "var(--ink-soft)", marginTop: 4 }}>
-            {loading ? "Cargando tus promos..." : hoyVisible.length === 0 ? "Nada activo hoy en tus rubros." : `${hoyVisible.length} beneficio${hoyVisible.length > 1 ? "s" : ""} disponible${hoyVisible.length > 1 ? "s" : ""} para vos.`}
+            {loading ? "Cargando tus promos..." : hoyInteres.length === 0 ? "Nada activo hoy en tus rubros." : `${hoyInteres.length} beneficio${hoyInteres.length > 1 ? "s" : ""} disponible${hoyInteres.length > 1 ? "s" : ""} para vos.`}
           </div>
         </div>
         <button onClick={onOpenSettings} className="mp-btn-ghost mp-btn" style={{ padding: 10, borderRadius: 10 }}>

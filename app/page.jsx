@@ -12,7 +12,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Fuel, ShoppingCart, Shirt, Pill, UtensilsCrossed, Smartphone as PhoneIcon,
   Settings, Mail, Bell, Heart, X, Check, ChevronRight, ChevronLeft,
-  Calendar, TrendingDown, LogOut
+  Calendar, TrendingDown, LogOut, ShoppingBag, Sparkles
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
@@ -29,6 +29,8 @@ const RUBRO_ICONS = {
   farmacia: Pill,
   gastronomia: UtensilsCrossed,
   tecnologia: PhoneIcon,
+  accesorios: ShoppingBag,
+  belleza: Sparkles,
 };
 
 function rubroInfo(slug, rubrosCatalogo) {

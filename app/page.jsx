@@ -124,15 +124,21 @@ const Styles = () => (
 );
 
 // ---------------------------------------------------------------------------
-// Login (magic link — sin contraseña)
+// Login (código de 6 dígitos por email — sin contraseña)
+//
+// Antes mandaba un magic link, pero el código no depende del navegador/
+// dispositivo que lo pidió (a diferencia del link, que se rompe si se pide
+// en un dispositivo y se abre en otro). El link de /auth/callback se deja
+// como fallback si el template de mail todavía lo incluye.
 // ---------------------------------------------------------------------------
 function Login() {
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [step, setStep] = useState("email"); // "email" | "code"
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSendCode = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -144,21 +150,65 @@ function Login() {
 
     setLoading(false);
     if (error) {
-      setError("No pudimos enviar el mail. Probá de nuevo.");
+      setError("No pudimos enviar el código. Probá de nuevo.");
       return;
     }
-    setSent(true);
+    setStep("code");
   };
 
-  if (sent) {
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const { error } = await supabaseBrowser().auth.verifyOtp({
+      email,
+      token: code,
+      type: "email",
+    });
+
+    setLoading(false);
+    if (error) {
+      setError("Código incorrecto o vencido. Probá de nuevo.");
+      return;
+    }
+    // La sesión queda seteada en el cliente; el listener de onAuthStateChange
+    // se encarga de sacar el Login y mostrar el feed.
+  };
+
+  if (step === "code") {
     return (
-      <div style={{ maxWidth: 400, margin: "0 auto", padding: "96px 20px", textAlign: "center" }}>
-        <div className="mp-display" style={{ fontSize: 22, fontWeight: 600, marginBottom: 8 }}>
-          Revisá tu email
+      <div style={{ maxWidth: 380, margin: "0 auto", padding: "96px 20px" }}>
+        <div className="mp-display" style={{ fontSize: 15, color: "var(--sage)", fontWeight: 500 }}>MisPromos</div>
+        <div className="mp-display" style={{ fontSize: 28, fontWeight: 600, marginTop: 4, marginBottom: 8 }}>
+          Ingresá el código
         </div>
-        <div style={{ fontSize: 14, color: "var(--ink-soft)" }}>
-          Te mandamos un link de acceso a <strong>{email}</strong>. Abrilo desde este mismo dispositivo.
+        <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 24 }}>
+          Te mandamos un código de 6 dígitos a <strong>{email}</strong>.
         </div>
+        <form onSubmit={handleVerifyCode}>
+          <input
+            type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} required autoFocus
+            placeholder="123456" value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            className="mp-input"
+            style={{ marginBottom: 12, letterSpacing: 6, textAlign: "center", fontSize: 20 }}
+          />
+          {error && <div style={{ fontSize: 12.5, color: "var(--rust)", marginBottom: 12 }}>{error}</div>}
+          <button
+            type="submit" className="mp-btn mp-btn-primary"
+            disabled={loading || code.length !== 6}
+            style={{ width: "100%", marginBottom: 10 }}
+          >
+            {loading ? "Verificando..." : "Entrar"}
+          </button>
+          <button
+            type="button" className="mp-btn mp-btn-ghost" style={{ width: "100%" }}
+            onClick={() => { setStep("email"); setCode(""); setError(""); }}
+          >
+            Usar otro email
+          </button>
+        </form>
       </div>
     );
   }
@@ -170,9 +220,9 @@ function Login() {
         Entrá con tu email
       </div>
       <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 24 }}>
-        Sin contraseña: te mandamos un link para entrar.
+        Sin contraseña: te mandamos un código de acceso.
       </div>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSendCode}>
         <input
           type="email" required autoFocus placeholder="tu@email.com" value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -180,7 +230,7 @@ function Login() {
         />
         {error && <div style={{ fontSize: 12.5, color: "var(--rust)", marginBottom: 12 }}>{error}</div>}
         <button type="submit" className="mp-btn mp-btn-primary" disabled={loading} style={{ width: "100%" }}>
-          {loading ? "Enviando..." : "Mandarme el link"}
+          {loading ? "Enviando..." : "Mandarme el código"}
         </button>
       </form>
     </div>

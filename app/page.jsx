@@ -12,7 +12,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Fuel, ShoppingCart, Shirt, Pill, UtensilsCrossed, Smartphone as PhoneIcon,
   Settings, Mail, Bell, Heart, X, Check, ChevronRight, ChevronLeft,
-  Calendar, TrendingDown, LogOut, ShoppingBag, Sparkles, Home, Plane
+  Calendar, TrendingDown, LogOut, ShoppingBag, Sparkles, Home, Plane, MapPin
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
@@ -53,6 +53,17 @@ function fechaParaDia(dow) {
 
 const toggle = (arr, setArr, val) =>
   setArr(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
+
+// Distancia entre dos puntos geográficos en km (fórmula del semiverseno).
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // ---------------------------------------------------------------------------
 // Estilos
@@ -455,9 +466,122 @@ function PromoCard({ promo, isToday, saved, activeEntidad, rubrosCatalogo, onSav
 }
 
 // ---------------------------------------------------------------------------
+// Sucursales cerca tuyo (geolocalización real + distancia)
+// ---------------------------------------------------------------------------
+function SucursalesCercanas({ onClose }) {
+  const [sucursales, setSucursales] = useState([]);
+  const [promosHoy, setPromosHoy] = useState([]);
+  const [status, setStatus] = useState("idle"); // idle | loading | ok | denied | error
+  const [cercanas, setCercanas] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/sucursales").then((r) => r.json()),
+      fetch("/api/promos/today").then((r) => r.json()),
+    ]).then(([suc, promos]) => {
+      setSucursales(suc.sucursales ?? []);
+      setPromosHoy(promos.promos ?? []);
+    });
+  }, []);
+
+  const pedirUbicacion = () => {
+    if (!navigator.geolocation) {
+      setStatus("error");
+      return;
+    }
+    setStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const conDistancia = sucursales
+          .map((s) => ({ ...s, distanciaKm: haversineKm(latitude, longitude, s.lat, s.lng) }))
+          .sort((a, b) => a.distanciaKm - b.distanciaKm)
+          .slice(0, 15);
+        setCercanas(conDistancia);
+        setStatus("ok");
+      },
+      () => setStatus("denied"),
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  };
+
+  const promoDe = (comercio) => {
+    const p = promosHoy.find((x) => x.comercio === comercio);
+    if (!p) return null;
+    return [
+      p.descuento_pct != null ? `${p.descuento_pct}%` : null,
+      p.cuotas_sin_interes != null ? `${p.cuotas_sin_interes} cuotas sin interés` : null,
+    ].filter(Boolean).join(" + ") + (p.entidad ? ` con ${p.entidad}` : "");
+  };
+
+  return (
+    <div style={{ maxWidth: 640, margin: "0 auto", padding: "28px 20px 60px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div className="mp-display" style={{ fontSize: 22, fontWeight: 600 }}>Cerca tuyo</div>
+        <button onClick={onClose} className="mp-btn-ghost mp-btn" style={{ padding: 10, borderRadius: 10 }}>
+          <X size={16} />
+        </button>
+      </div>
+
+      {status === "idle" && (
+        <div className="mp-card" style={{ padding: 28, textAlign: "center" }}>
+          <MapPin size={26} color="var(--sage)" style={{ marginBottom: 10 }} />
+          <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 18 }}>
+            Activá tu ubicación para ver las sucursales más cercanas y si tienen alguna promo hoy.
+          </div>
+          <button onClick={pedirUbicacion} className="mp-btn mp-btn-primary">Usar mi ubicación</button>
+        </div>
+      )}
+
+      {status === "loading" && (
+        <div style={{ fontSize: 14, color: "var(--ink-soft)", textAlign: "center", padding: 28 }}>
+          Buscando sucursales cerca tuyo...
+        </div>
+      )}
+
+      {(status === "denied" || status === "error") && (
+        <div className="mp-card" style={{ padding: 28, textAlign: "center" }}>
+          <div style={{ fontSize: 14, color: "var(--ink-soft)", marginBottom: 18 }}>
+            No pudimos acceder a tu ubicación. Revisá los permisos de ubicación del navegador e intentá de nuevo.
+          </div>
+          <button onClick={pedirUbicacion} className="mp-btn mp-btn-ghost">Reintentar</button>
+        </div>
+      )}
+
+      {status === "ok" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {cercanas.length === 0 && (
+            <div style={{ fontSize: 14, color: "var(--ink-soft)" }}>Todavía no tenemos sucursales cargadas cerca tuyo.</div>
+          )}
+          {cercanas.map((s) => {
+            const promo = promoDe(s.comercio);
+            return (
+              <div key={s.id} className="mp-card" style={{ padding: "14px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14.5 }}>{s.nombre}</div>
+                  <div style={{ fontSize: 12.5, color: "var(--sage)", fontWeight: 600, flexShrink: 0 }}>
+                    {s.distanciaKm.toFixed(1)} km
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>{s.direccion}</div>
+                {promo && (
+                  <div style={{ fontSize: 12.5, color: "var(--amber-deep)", marginTop: 6, fontWeight: 500 }}>
+                    Hoy: {promo}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Feed principal
 // ---------------------------------------------------------------------------
-function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
+function Feed({ perfil, catalogos, onOpenSettings, onOpenCerca, onLogout }) {
   const [tab, setTab] = useState("hoy");
   const [rubroFiltro, setRubroFiltro] = useState("todos");
   const [simDay, setSimDay] = useState(new Date().getDay());
@@ -581,9 +705,14 @@ function Feed({ perfil, catalogos, onOpenSettings, onLogout }) {
             {loading ? "Cargando tus promos..." : hoyInteres.length === 0 ? "Nada activo hoy en tus rubros." : `${hoyInteres.length} beneficio${hoyInteres.length > 1 ? "s" : ""} disponible${hoyInteres.length > 1 ? "s" : ""} para vos.`}
           </div>
         </div>
-        <button onClick={onOpenSettings} className="mp-btn-ghost mp-btn" style={{ padding: 10, borderRadius: 10 }}>
-          <Settings size={17} />
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={onOpenCerca} className="mp-btn-ghost mp-btn" style={{ padding: 10, borderRadius: 10 }}>
+            <MapPin size={17} />
+          </button>
+          <button onClick={onOpenSettings} className="mp-btn-ghost mp-btn" style={{ padding: 10, borderRadius: 10 }}>
+            <Settings size={17} />
+          </button>
+        </div>
       </div>
 
       {/* simulador de día — herramienta de demo */}
@@ -835,8 +964,15 @@ export default function MisPromosApp() {
             setView("feed");
           }}
         />
+      ) : view === "cerca" ? (
+        <SucursalesCercanas onClose={() => setView("feed")} />
       ) : (
-        <Feed perfil={perfil} catalogos={catalogos} onOpenSettings={() => setView("settings")} onLogout={handleLogout} />
+        <Feed
+          perfil={perfil} catalogos={catalogos}
+          onOpenSettings={() => setView("settings")}
+          onOpenCerca={() => setView("cerca")}
+          onLogout={handleLogout}
+        />
       )}
     </div>
   );

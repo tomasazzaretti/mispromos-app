@@ -54,17 +54,6 @@ function fechaParaDia(dow) {
 const toggle = (arr, setArr, val) =>
   setArr(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
 
-// Distancia entre dos puntos geográficos en km (fórmula del semiverseno).
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 // ---------------------------------------------------------------------------
 // Estilos
 // ---------------------------------------------------------------------------
@@ -469,19 +458,12 @@ function PromoCard({ promo, isToday, saved, activeEntidad, rubrosCatalogo, onSav
 // Sucursales cerca tuyo (geolocalización real + distancia)
 // ---------------------------------------------------------------------------
 function SucursalesCercanas({ onClose }) {
-  const [sucursales, setSucursales] = useState([]);
   const [promosHoy, setPromosHoy] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | loading | ok | denied | error
   const [cercanas, setCercanas] = useState([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/sucursales").then((r) => r.json()),
-      fetch("/api/promos/today").then((r) => r.json()),
-    ]).then(([suc, promos]) => {
-      setSucursales(suc.sucursales ?? []);
-      setPromosHoy(promos.promos ?? []);
-    });
+    fetch("/api/promos/today").then((r) => r.json()).then((d) => setPromosHoy(d.promos ?? []));
   }, []);
 
   const pedirUbicacion = () => {
@@ -491,13 +473,13 @@ function SucursalesCercanas({ onClose }) {
     }
     setStatus("loading");
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
-        const conDistancia = sucursales
-          .map((s) => ({ ...s, distanciaKm: haversineKm(latitude, longitude, s.lat, s.lng) }))
-          .sort((a, b) => a.distanciaKm - b.distanciaKm)
-          .slice(0, 15);
-        setCercanas(conDistancia);
+        // El cálculo de distancia y el orden ya vienen del servidor (con
+        // miles de sucursales cargadas no tiene sentido mandarlas todas acá).
+        const r = await fetch(`/api/sucursales?lat=${latitude}&lng=${longitude}&limit=15`);
+        const data = await r.json();
+        setCercanas(data.sucursales ?? []);
         setStatus("ok");
       },
       () => setStatus("denied"),
